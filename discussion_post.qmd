@@ -1,0 +1,46 @@
+---
+title: "Discussion 11: Analyze a Commercial Recommender"
+author: "Desiree Thomas"
+format: html
+editor: visual
+---
+
+## Scenario Design Analysis
+
+I chose Audible for this assignment.
+
+Some background: Audible, is an audiobook and podcast service; where users can stream and purchase different forms of audio-oriented content. It started off as an independent company before it was bought by Amazon in 2008. Audible has both a website and an app available across different platforms and operating systems, though it does follow a mobile-first strategy. Currently, they use these are their main strategies for recommendation: Recommendation algorithms such as Collaborative Filtering, Content-Based Filtering, and Contextual Signals alongside an LLM based "recommendation system" that resides in the search bar of their app. 
+
+In terms of scenario design, Audible's primary targets are book readers, first and foremost. To answer the first question of the scenario design:
+
+1\) Who are your target users?
+
+- Though Audible is an audio-based platform, they invest portions of their advertising into large brick-and-mortar book stores and are integrated into Amazon's purchasing page -- if a user goes to buy a book on Amazon, it will inform them if there is an audio version available via Audible (along with Kindle). In addition, Audible books are only available on Kindle E-readers (no-third parties; Kindle is owned by Amazon). 
+
+- Their target user owns a mobile device and/or a Kindle E-reader. 
+
+- Their target user most likely owns headphones or has a device with a speaker
+
+- Owns a bank account or has access to someone else who owns a card 
+
+- Most likely already listens to other streaming services such as Spotify or Apple Music
+
+- Is willing to or has previously subscribed to streaming services
+
+2\) What are their key goals?
+
+The user(s) key goal is to listen to audio-books on the go from their mobile device. The user's goal is to consume audio-based works with as little friction as possible, with the option to consume when there is no internet service. 
+
+3\) How can you help them accomplish those goals?
+
+Having a responsive platform (whether on mobile or desktop) and also making it easy for the user to find the selection of book titles that would interest them the most. There may also be certain methods used to entice the user to return to make another purchase (such as deals or subscriptions). The ease of use for the platform should be high for the user and they should always have a seamless experience.
+
+## One recommender system or two?
+
+Audible would most likely has two recommender systems, as they would benefit from one targeting their organization and the second (most likely hybrid) recommendation system targeting their userbase. Many companies utilize a Churn Prediction and Retention Engine that works alongside the recommender that is customer facing. Unlike, the recommender servicing customers, the organization facing system instead likely creates a "churn score" via propensity modeling, suggests challenges to it's users with ("listen to 3 titles in 1 month and earn this badge") type of incentive which can help keep customers engaged and increase retention; along with a subscription based optimization where different tiers are suggested to the user based on their spending and listening habits; this also likely triggers the "pause subscription" suggestion when a user clicks on the cancel subscription.
+
+## Reverse engineering attempt & specific recommendations for improvement: 
+
+When logged in on the desktop version, the first thing you see is their large hero section, which features the current audiobook that they are currently advertising widely (currently Harry Potter and the Half-Blood Prince). In particular, the push for this series is most likely due to the new Harry Potter episodic series that is being released via a streaming platform and thus currently popular. Beneath the large hero section, there are four other interactive buttons with other audios that they are heavily advertising. Below this section, is a Monthly Deals "Hundreds of titles up to 80% off non-member prices" with an encouragingly orange button enticing the user to 'Shop the sale' and then the various categories for the titles that their site holds. What does this tell us? Though I am signed in, Audible still prioritizes their most popular and relevant titles. This indicates that they may be anticipating cold starts, sparsity problems and have recognized the long tail phenomenon. Their titles are large with the 'book covers' shown clearly along with the narrator names being promoted almost as largely as the actual author's names. They also have a "Continue your series" lineup, under their "Top picks for you in Genre 'Genre-name'" and above the "Recommended for you" lineup. These are just a few of the categories/line-ups that users can pick from on their site and indicates a hybrid approach to their recommendation system.
+
+I believe that going forward, one of the few recommendations I would make for the main site is that if a user is signed in, their hero section should align with the most popular title relating to a title that the user is likely to pick. I would also suggest that they no longer allow credits to expire, especially if their users are current subscribers.
