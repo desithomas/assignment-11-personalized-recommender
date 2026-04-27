@@ -68,9 +68,7 @@ print(rmse_comparison)
 
 ## Visualizations 
 
-Here I visualize the error rates for my item-based and user-based models. Ideally, the models perform better when their scores are closer to 0. As we can see here, my item baed model returned with an error of 2.03 and my user-based model returned with an error rate of 2.08. Due to this, I will make adjustments to my model to bring the error rate hopefully to a lower range. However, it is important to understand that while a "good" error rate is often between 0 and 1, we do not want to push the model to an exact score of 0. This is often the source of overfitting which can lead to it's future predictions failing often or becoming "way off base". In our case, as our models have error rates of >= 2, the model is often overestimating that a user likes a movie more than they do; for example, for a user who rated a movie with a score of 1, it is estimating that they rated it a ~2-3. 
 
-Part of the difficulty in cultivating an accurate model rating on the first try, it how small my dataset is. I have only 75 users and a very limited base of only 6 movies. We must keep in mind that the Recommenderlab is geared towards datasets with greater amounts of data. My UBCF default is nn = 25, which means that the algorithm tried to find the 25 "nearest" neighbors" in a dataset that only has... 75 users. In this case, I likely need to cut the amount of users that the model is evaluating down to 5 or 10 users to increase the accuracy. 
 ```{r}
 ggplot(rmse_comparison, aes(x = reorder(Algorithm, RMSE), y = RMSE, fill = Algorithm)) +
   geom_col(width = 0.5, color = "black") +
@@ -85,4 +83,74 @@ ggplot(rmse_comparison, aes(x = reorder(Algorithm, RMSE), y = RMSE, fill = Algor
   ) +
   theme(legend.position = "none")
 ```
+Here I visualize the error rates for my item-based and user-based models. Ideally, the models perform better when their scores are closer to 0. As we can see here, my item baed model returned with an error of 2.03 and my user-based model returned with an error rate of 2.08. Due to this, I will make adjustments to my model to bring the error rate hopefully to a lower range. However, it is important to understand that while a "good" error rate is often between 0 and 1, we do not want to push the model to an exact score of 0. This is often the source of overfitting which can lead to it's future predictions failing often or becoming "way off base". In our case, as our models have error rates of >= 2, the model is often overestimating that a user likes a movie more than they do; for example, for a user who rated a movie with a score of 1, it is estimating that they rated it a ~2-3. 
 
+Part of the difficulty in cultivating an accurate model rating on the first try, it how small my dataset is. I have only 75 users and a very limited base of only 6 movies. We must keep in mind that the Recommenderlab is geared towards datasets with greater amounts of data. My UBCF default is nn = 25, which means that the algorithm tried to find the 25 "nearest" neighbors" in a dataset that only has... 75 users. In this case, I likely need to cut the amount of users that the model is evaluating down to 5 or 10 users to increase the accuracy. I am experiencing the same difficulty with my IBCF model due to the very limited number of items I am providing the model with. To increase the accuracy, I will change k = 30 tok = 2 or 3; I am leaning more towards 2. A third difficulty, be due to my using the Cosine similarity which ignores user bias; I will switch to the Pearson Correlation instead. 
+
+In a search to understand and demonstrate the difference that these individual changes make, I will create a list with the changes and shunt them into algorithms before I rerun my evaluation and then extract and plot. Since a lot of this code is repeating with minute changes (mostly the moethod and numbers), I had Gemini generate it to save time on my end. 
+
+```{r}
+# Define a "Grid Search" of different algorithms and parameters
+algorithms <- list(
+  # User-Based CF tests (tuning 'nn' - number of neighbors)
+  "UBCF (Cosine, nn=25)" = list(name = "UBCF", param = list(method = "Cosine", nn = 25)),
+  "UBCF (Pearson, nn=25)" = list(name = "UBCF", param = list(method = "Pearson", nn = 25)),
+  "UBCF (Pearson, nn=10)" = list(name = "UBCF", param = list(method = "Pearson", nn = 10)),
+  "UBCF (Pearson, nn=5)"  = list(name = "UBCF", param = list(method = "Pearson", nn = 5)),
+  
+  # Item-Based CF tests (tuning 'k' - number of items to compare)
+  # Notice 'k' is strictly kept under your 6-movie limit
+  "IBCF (Cosine, k=3)" = list(name = "IBCF", param = list(method = "Cosine", k = 3)),
+  "IBCF (Pearson, k=3)" = list(name = "IBCF", param = list(method = "Pearson", k = 3)),
+  "IBCF (Pearson, k=2)" = list(name = "IBCF", param = list(method = "Pearson", k = 2))
+)
+
+# Rerun the evaluation
+model_results <- evaluate(eval_scheme, algorithms, type = "ratings")
+
+# Extract and plot 
+rmse_comparison <- map_dfr(model_results, ~as_tibble(getConfusionMatrix(.x)[[1]]), .id = "Algorithm") %>%
+  select(Algorithm, RMSE, MSE, MAE) %>%
+  arrange(RMSE)
+
+print(rmse_comparison)
+```
+## Visualizations 
+
+```{r}
+
+
+# grouping column for clean color-coding
+rmse_plot_data <- rmse_comparison %>%
+  mutate(Model_Family = ifelse(str_detect(Algorithm, "UBCF"), "User-Based CF", "Item-Based CF"))
+
+# Generate the optimized plot
+ggplot(rmse_plot_data, aes(x = reorder(Algorithm, RMSE), y = RMSE, fill = Model_Family)) +
+  geom_col(color = "black", alpha = 0.9) +
+  geom_text(aes(label = round(RMSE, 3)), vjust = -0.5, fontface = "bold", size = 4) +
+  scale_fill_manual(values = c("User-Based CF" = "#2c3e50", "Item-Based CF" = "#e74c3c")) +
+  theme_minimal() +
+  labs(
+    title = "Hyperparameter Tuning: Algorithm RMSE Comparison",
+    subtitle = "Evaluating similarity metrics and neighborhood constraints on a 6-item catalog.",
+    x = "Algorithm & Parameters",
+    y = "Root Mean Square Error (RMSE)",
+    fill = "Algorithm Family"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"),
+    plot.title = element_text(face = "bold", size = 14),
+    panel.grid.major.x = element_blank() # Cleans up vertical background lines
+  )
+```
+
+Looking at the visualizations above, we notice that using Pearson with a nearest neighbor of 10, provides us with the lowest UBCF score 1.658, while using Cosine with a k of 3 gives us a score of 1.943. What does this mean? To translate, we can say that by restricting the neighborhood size and k, the model was successfully able to better filter out the users and items with greater "noise", which led to the error rate overall being reduced. 
+
+## Tasks for the future
+
+Future iterations of this assignment will include expanding the item and user base to provide better nearest-neighbor calculations. While I only had one cold-start problem in my original dataset, with a larger item and user base, it is more likely to occur and can be reduced. I will also add more information regarding the genres, release dates, and other item data to allow me to transition to a hybrid recommender system similar to the ones seen at companies such as Netflic, Audible, etc. albeit at a much smaller scale. This will allow me to use Content-based filtering. 
+
+## Citations 
+
+Google DeepMind. (2026). Gemini 3 Pro [Large Language Model]. 
+https://gemini,google.com. Acessed April 26, 2026. 
