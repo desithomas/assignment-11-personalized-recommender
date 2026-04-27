@@ -26,3 +26,63 @@ To evaluate the model, I am planning to use K-fold cross-validation (I still nee
 Anticipated Challenges:
 
 Some of the challenges I anticipate during this assignment are due to the very small size of my data. Due to this, I will have to focus on the rating prediction accuracy. There are also a lot of missing ratings, which may damper my attempts at collaborative filtering. Cold starting was a challenge in the original Global Baseline Estimate and may return in this project. Evaluation sensitivity may also be a challenge as well. Finally, due to my lack of experience in recommender systems, I will have to do a lot of research and learn how to successfully complete the assignment within the timeframe of the deliverable.
+
+```{r}
+library(tidyverse)
+library(recommenderlab)
+```
+```{r}
+tidy_movie_survey <- read_csv("https://raw.githubusercontent.com/desithomas/DATA607_3A/refs/heads/main/excel_version_survey_results2.csv") %>%
+drop_na(rating) %>% 
+  select(profile_name, movie_title, rating) %>% 
+  mutate(across(c(profile_name, movie_title), as.factor))
+
+rating_matrix <- as(as.data.frame(tidy_movie_survey), "realRatingMatrix")
+
+#unlike the tutorial in base R that I followed (for an example of how to manually do this), I changed given to 1 instead of 12 to prevent my algorithm from failing
+eval_scheme <- evaluationScheme(rating_matrix, method = "cross-validation", k = 5, given = 1, goodRating = 3)
+
+#I decided to define both of my algorithms earlier in my codebase rather than doing that one at a time 
+
+algorithms <- list(
+  "User-Based CF" = list(name = "UBCF", param = list(method = "Cosine")), 
+  "Item-Based CF" = list(nane = "IBCF", param = list(method = "Cosine"))
+)
+
+#Here I run the evaluations 
+model_results <- evaluate(eval_scheme, algorithms, type = "ratings")
+
+#Here I am extracting the results of the S4 list and converting the confusion matrices to tibbles before I bind them together using purrr
+
+rmse_comparison <- map_dfr(model_results, ~as_tibble(getConfusionMatrix(.x)[[1]]), .id="Algorithm") %>% 
+  select(Algorithm, RMSE, MSE, MAE) %>% 
+  arrange(RMSE) #See which algorithm performed better
+
+#tibble
+print(rmse_comparison)
+
+
+
+
+```
+
+## Visualizations 
+
+Here I visualize the error rates for my item-based and user-based models. Ideally, the models perform better when their scores are closer to 0. As we can see here, my item baed model returned with an error of 2.03 and my user-based model returned with an error rate of 2.08. Due to this, I will make adjustments to my model to bring the error rate hopefully to a lower range. However, it is important to understand that while a "good" error rate is often between 0 and 1, we do not want to push the model to an exact score of 0. This is often the source of overfitting which can lead to it's future predictions failing often or becoming "way off base". In our case, as our models have error rates of >= 2, the model is often overestimating that a user likes a movie more than they do; for example, for a user who rated a movie with a score of 1, it is estimating that they rated it a ~2-3. 
+
+Part of the difficulty in cultivating an accurate model rating on the first try, it how small my dataset is. I have only 75 users and a very limited base of only 6 movies. We must keep in mind that the Recommenderlab is geared towards datasets with greater amounts of data. My UBCF default is nn = 25, which means that the algorithm tried to find the 25 "nearest" neighbors" in a dataset that only has... 75 users. In this case, I likely need to cut the amount of users that the model is evaluating down to 5 or 10 users to increase the accuracy. 
+```{r}
+ggplot(rmse_comparison, aes(x = reorder(Algorithm, RMSE), y = RMSE, fill = Algorithm)) +
+  geom_col(width = 0.5, color = "black") +
+  geom_text(aes(label = round(RMSE, 3)), vjust = -0.5, fontface = "bold") +
+  scale_fill_manual(values = c("User-Based CF" = "#2c3e50", "Item-Based CF" = "#e74c3c")) +
+  theme_minimal() +
+  labs(
+    title = "Algorithm Comparison: RMSE",
+    subtitle = "Lower error values indicate higher predictive accuracy.",
+    x = "Algorithm",
+    y = "Root Mean Square Error (RMSE)"
+  ) +
+  theme(legend.position = "none")
+```
+
